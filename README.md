@@ -1,132 +1,113 @@
-# Bollinger Bands Arbitrage Backtest
+# BollingerBands Arbitrage Strategy Backtest
 
-This project implements a **Bollinger Bands arbitrage strategy** and a minimalistic **backtesting engine**.  
-It uses `pandas_ta` for technical indicators, `plotly` for visualization, and `pandas`/`numpy` for data handling.
+## Overview
 
----
+This repository implements a **Bollinger Bands Arbitrage Strategy**,
+designed to exploit short-term mean reversion patterns in high-frequency
+market data.\
+The strategy assumes that price tends to oscillate around its
+statistical mean --- modeled by Bollinger Bands --- and aims to capture
+these deviations intraday.
 
-## 🧠 Strategy Overview
+Unlike conventional trend-following or breakout systems, this approach
+takes a *contrarian* position: it anticipates that extreme short-term
+deviations will revert to the mean. The strategy is purely systematic
+and executes trades based on quantitative signals without discretionary
+overrides.
 
-The strategy exploits **price mean reversion** around Bollinger Bands.  
-It assumes prices behave like a **sinusoidal process** around their mean (a weak form of Brownian motion).  
-The system enters positions when the price crosses the Bollinger mean and exits when it touches the opposite band.
+## Methodology
 
-- **Entry:**  
-  - Long if price moves *above* the Bollinger mean.  
-  - Short if price moves *below* the Bollinger mean.
+### Core Idea
 
-- **Exit:**  
-  - Close long at the **upper band**.  
-  - Close short at the **lower band**.
+The underlying hypothesis is that intraday price dynamics approximate
+**Brownian motion** with bounded volatility, behaving roughly like a
+noisy sine wave around the mean.\
+Thus, when price crosses the Bollinger midline, a position is opened in
+the direction of the deviation, expecting a reversion toward the
+opposite band.
 
-The strategy runs during **NY premarket → NY close (07:00–15:59)** for higher liquidity and stronger deviations.
+-   **Entry Condition:**
+    -   Long if price crosses above the middle band.\
+    -   Short if price crosses below the middle band.
+-   **Exit Condition:**
+    -   Longs close when price touches or exceeds the upper band.\
+    -   Shorts close when price touches or drops below the lower band.
 
-> ⚠️ Historically, the system has been tested on **15 years of 1-minute Nasdaq (NQ) data**,  
-> showing **consistent profitability** and an **exceptionally high Sharpe ratio**.  
-> Despite lacking conventional stop-loss mechanisms, drawdowns remain statistically contained due to mean-reversion structure.
+This design leads to high win rates, as most trades eventually revert to
+the mean --- but at the cost of potentially extreme drawdowns. There is
+no stop-loss mechanism, only dynamic exits based on price normalization.
 
-> ⚠️ Previously this approach was considered theoretically unstable.  
-> However, empirical results across multiple volatility regimes **falsify** that concern:  
-> the strategy maintains strong returns without blow-up behavior.
+## Implementation Details
 
----
+The code loads high-frequency (1-minute) OHLC data, applies Bollinger
+Bands via `pandas_ta`, and simulates trades per trading day between
+**07:00--15:59** (NY pre-market to close), where volume and volatility
+are highest.
 
-## ⚙️ Implementation
+Each trade tracks: - **Time** - **Direction** (long/short) - **Entry and
+Exit Prices** - **Profit/Loss (PnL)** - **Maximum Drawdown (DD)**
 
-The backtest is wrapped in the `Backtest` class.
+Evaluation summarizes: - Total Profit/Loss\
+- Number of Trades\
+- Average Drawdown\
+- Average PnL per Trade
 
-### Key Methods
+## Code Structure
 
-| Method | Description |
-|---------|--------------|
-| `__init__(file, rtr=10000)` | Initialize with CSV path and notional trade capital. |
-| `_load_data(file)` | Loads and filters OHLC data between 07:00–15:59. |
-| `trade()` | Logs trades with type, entry, exit, and drawdown. |
-| `backtest(bb_length=26, bb_std=2.2)` | Core loop that generates entries and exits per trading day. |
-| `evaluate()` | Computes total PnL, average drawdown, and plots cumulative performance. |
-| `__call__()` | Runs the full backtest and evaluation automatically. |
-
----
-
-## 🧩 Data Requirements
-
-- Input file: CSV with OHLC columns (e.g. `"NQ_OHLC_1m.csv"`)  
-- Expected columns:  
-  `Open, High, Low, Close`  
-- Datetime index required (first column parsed as datetime).
-
-Example:
-```csv
-Datetime,Open,High,Low,Close
-2024-01-01 07:00:00,16200,16210,16195,16205
-2024-01-01 07:01:00,16205,16212,16198,16200
-...
+``` python
+class Backtest:
+    def __init__(self, file, rtr=10000):
+        ...
+    def _load_data(self, file):
+        ...
+    def trade(self, time, type, entry, exit, dd):
+        ...
+    def backtest(self, bb_length=26, bb_std=2.2):
+        ...
+    def evaluate(self):
+        ...
+    def __call__(self):
+        ...
 ```
 
----
+To run:
 
-## 🚀 Usage
-
-```bash
+``` bash
 python backtest.py
 ```
 
-Example in code:
-```python
+The script will: 1. Load data (`NQ_OHLC_1m.csv`) 2. Execute trades day
+by day 3. Print evaluation metrics
+
+## Important Notes
+
+-   **No Commission, Spread, or Swap Costs** are modeled. In real-world
+    arbitrage, these significantly impact profitability.\
+-   **No Stop Losses**: drawdowns can be extremely high compared to
+    realized returns.\
+-   **Data Tested:** 15 years of 1-minute **NASDAQ (NQ)** data.\
+-   **Performance:** Extremely high **Sharpe ratio** and consistent
+    profitability under historical backtest conditions --- though such
+    results may not generalize under live trading conditions.\
+-   **Interpretation:** The results falsify some conventional
+    assumptions about market efficiency in intraday mean reversion
+    contexts, though caution is warranted --- profits can disappear
+    quickly when costs, slippage, and execution latency are introduced.
+
+## Example Usage
+
+``` python
 if __name__ == '__main__':
     bt = Backtest('NQ_OHLC_1m.csv')
     bt()
 ```
 
-Optional parameters:
-```python
-bt.backtest(bb_length=30, bb_std=2.5)
-```
+## Conclusion
 
----
-
-## 📈 Output
-
-- Console metrics:
-  ```
-  pnl(125): 1,245.32 $
-  avg pnl/t: 9.96 $
-  avg dd/t: -55.42 $
-  ```
-- Interactive Plotly chart:
-  - Displays cumulative PnL over all trades.
-  - Styled dark theme for notebook or Jupyter environments.
-
----
-
-## 🧮 Dependencies
-
-Install required packages via:
-```bash
-pip install pandas pandas_ta numpy plotly
-```
-
----
-
-## ⚠️ Notes
-
-- The system’s stability contradicts the usual assumption that mean-reversion arbitrage without stop-loss is unviable.  
-  Its profitability across 15 years of data provides **empirical falsification** of that claim.
-- **No slippage or commissions** are modeled.
-- **No position sizing or external risk management** is applied — the risk control is intrinsic to the Bollinger framework.
-
----
-
-## 📜 License
-
-MIT License — free to use, modify, and distribute.
-
----
-
-## 🧠 Author Notes
-
-The project aims to demonstrate that mean-reversion patterns can remain robust over long horizons,  
-and that the classic “unstable mean-reversion” argument does not necessarily hold empirically for Bollinger-based approaches.
-
-The takeaway:  
-> A strategy that breaks assumptions about instability is worth studying further — even if it offends theoretical orthodoxy.
+This backtest illustrates that even a simple statistical arbitrage
+mechanism can produce seemingly extraordinary results over long
+historical datasets --- but at the cost of high latent risk.\
+Its profitability likely depends on data characteristics that may not
+persist in live markets. Treat this not as a trading system, but as an
+**empirical exploration of market microstructure and mean-reversion
+behavior.**
