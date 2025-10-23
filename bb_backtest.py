@@ -66,7 +66,7 @@ class Backtest:
                         direction = 'short'
                         in_trade = True
                         
-                else: #check weather to exit
+                else: #check wether to exit
                     if direction == 'long': #long exit
                         if line.loc['High'] >= line.loc['bb_high']:
                             exit = line.loc['High']
