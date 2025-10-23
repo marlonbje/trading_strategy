@@ -2,7 +2,7 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 
-#This strategy is a BollingerBands Arbitrage Strategy. It does not set StopLosses because the exit is price-adjusted. Therefore the Winrate is high – nevertheless you have a extreme high drawdown/return ratio. Moreover arbitrage strategies extremely rely on comission, spread and swap fees which have huge impact on the outcome.
+#This strategy is a BollingerBands Arbitrage Strategy. It does not set StopLosses because the exit is price-adjusted. Therefore the Winrate is high – nevertheless you there is an extreme high drawdown/return ratio. Moreover arbitrage strategies extremely rely on comission, spread and swap fees which have huge impact on the outcome.
 
 class Backtest:
     def __init__(self,file,rtr=10000):
