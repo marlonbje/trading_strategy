@@ -80,10 +80,10 @@ class Backtest:
                             if not np.isnan(dd['price']): #if previous drawdown
                                 if line.loc['Low'] < dd['price']: #current < old?
                                     dd['price'] = line.loc['Low']
-                                    dd['pct'] = line.loc['Low']/entry-1
+                                    dd['pct'] = abs(entry/line.loc['Low']-1)
                             else:
                                 dd['price'] = line.loc['Low']
-                                dd['pct'] = line.loc['Low']/entry-1
+                                dd['pct'] = abs(entry/line.loc['Low']-1)
                                 
                     elif direction == 'short': #short exit
                         if line.loc['Low'] <= line.loc['bb_low']:
@@ -98,10 +98,10 @@ class Backtest:
                             if not np.isnan(dd['price']): #if previous drawdown
                                 if line.loc['High'] > dd['price']: #current > old?
                                     dd['price'] = line.loc['High']
-                                    dd['pct']= entry/line.loc['High']-1
+                                    dd['pct']= abs(line.loc['High']/entry-1)
                             else:
                                 dd['price'] = line.loc['High']
-                                dd['pct'] = entry/line.loc['High']-1
+                                dd['pct'] = abs(line.loc['High']/entry)-1
                             
     def evaluate(self):
         pnl = self.trades['pnl'].sum()
